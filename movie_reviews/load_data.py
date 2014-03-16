@@ -1,26 +1,26 @@
 def load_base_training():
-    file = open('/data/kaggle/movie_reviews/data/train.tsv')
+    """
+        Returns an array of ({att1:?, att2:?, ..., attN:?}, sentiment_value)
+    """
+    file = open('/Users/zoraida/Analytics/rotten-tomatoes/data/train.tsv')
 
-    # One dict for phrase length (in words)
-    train_dicts = []
-    for _ in range(53):  # Longest phrase contains 53 words
-        train_dicts.append({})
-    
+    train_lines = []
+
     # Ignore heading
     file.next()
 
-    #print file.next().strip().split('\t')
     for l in file:
-        phraseid, sentenceid, phrase, sentiment = l.strip().split('\t')
-        phrase = phrase.lower()
-        words = phrase.split(' ')
-        train_dicts[len(words)][phrase] = sentiment
+        phraseid, sentenceid, phrase, sentiment = l.split('\t')
+        train_lines.append((build_features(phrase), sentiment))
 
-    return train_dicts
+    return train_lines
 
 
 def load_base_test():
-    testfile = open('/data/kaggle/movie_reviews/data/test.tsv') 
+    """
+        Returns an array of {features:{att1:?, att2:?, ..., attN:?}, phrase_id:?}
+    """
+    testfile = open('/Users/zoraida/Analytics/rotten-tomatoes/data/test.tsv')
 
     test_lines = []
 
@@ -28,50 +28,24 @@ def load_base_test():
     testfile.next()
 
     for l in testfile:
-        phraseid, sentenceid, phrase = l.strip().split('\t')
-        test_lines.append((phraseid, phrase.lower()))
+        phraseid, sentenceid, phrase = l.split('\t')
+        test_lines.append({'features': build_features(phrase), 'phraseid': phraseid})
 
     return test_lines
 
 
-
-def lookup_dict(train_dicts, phrase):
-    num_words = len(phrase.split(' '))
-
-    if num_words > 52:
-        return None
-
-    #print "Looking for phrase: " + phrase + " -- Returning: " + str(train_dicts[num_words].get(phrase))
-    return train_dicts[num_words].get(phrase)
+def build_features(phrase):
+    return {'nwords': len(phrase.strip().split(' '))}
 
 
 def write_submission(array):
-    filename = '/data/kaggle/movie_reviews/data/submission.csv'
+    filename = '/Users/zoraida/Analytics/rotten-tomatoes/data/submission.csv'
     print "Writing output to filename: " + filename
- 
-    outputfile = open(filename, 'w') 
+
+    outputfile = open(filename, 'w')
     outputfile.write("PhraseId,Sentiment\n")
 
     for el in array:
-        outputfile.write(str(el[0]) + "," + str(el[1]) + "\n")
+        outputfile.write(str(el[0]) + "," + str(el[1]))
 
-    outputfile.close() 
-     
-
-def calculate_most_frequent(train_dicts):
-    most_frequent = []
-
-    for i in range(len(train_dicts)):
-        distrib_sentiments = [0]*6
-
-        for item in train_dicts[i]:
-            distrib_sentiments[int(train_dicts[i][item])] += 1
-            distrib_sentiments[5] += 1
-        print "Looking at phrase size: " + str(i) + ", total phrases: " + str(distrib_sentiments[5]) + " -->" + \
-              str([round(float(x)/max(distrib_sentiments[5],1), 2) for x in distrib_sentiments[0:5]])
-        most_frequent.append(max( (v, i) for i, v in enumerate(distrib_sentiments[0:5]) )[1])
-    
-    most_frequent = most_frequent + [2,]*100  # Autocomplete with 2s
-    return most_frequent
-
-
+    outputfile.close()
